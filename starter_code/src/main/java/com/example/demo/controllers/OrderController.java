@@ -16,7 +16,8 @@ import com.example.demo.model.persistence.UserOrder;
 import com.example.demo.model.persistence.repositories.CartRepository;
 import com.example.demo.model.persistence.repositories.OrderRepository;
 import com.example.demo.model.persistence.repositories.UserRepository;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @RestController
 @RequestMapping("/api/order")
 public class OrderController {
@@ -27,15 +28,17 @@ public class OrderController {
 	
 	@Autowired
 	private OrderRepository orderRepository;
-	
+	private Logger log = LoggerFactory.getLogger(OrderController.class);
 	
 	@PostMapping("/submit/{username}")
 	public ResponseEntity<UserOrder> submit(@PathVariable String username) {
 		User user = userRepository.findByUsername(username);
 		if(user == null) {
+			log.error("[ERROR] [submit] failed by: " + username );
 			return ResponseEntity.notFound().build();
 		}
 		UserOrder order = UserOrder.createFromCart(user.getCart());
+		log.info("[INFO] [submit] succeed by: " + user.getUsername());
 		orderRepository.save(order);
 		return ResponseEntity.ok(order);
 	}
@@ -44,8 +47,10 @@ public class OrderController {
 	public ResponseEntity<List<UserOrder>> getOrdersForUser(@PathVariable String username) {
 		User user = userRepository.findByUsername(username);
 		if(user == null) {
+			log.error("[ERROR] [getOrdersForUser] failed by: " + username );
 			return ResponseEntity.notFound().build();
 		}
+		log.info("[INFO] [getOrdersForUser] succeed by : " + user.getUsername());
 		return ResponseEntity.ok(orderRepository.findByUser(user));
 	}
 }

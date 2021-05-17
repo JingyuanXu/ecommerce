@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration>
+
+        <appender name="console" class = "ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+            <pattern> %d [%thread] %-5p %-30.30c{1} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+
+    <appender name = "calls" class = "ch.qos.logback.core.rolling.RollingFileAppender">
+        <Append>true</Append>
+        <File>C:/work/ecommerce.log</File>
+        <encoder>
+            <pattern>%m%n</pattern>
+        </encoder>
+        <rollingPolicy class = "ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <maxIndex>10</maxIndex>
+            <FileNamePattern>C:/work/ecommerce.log.%i</FileNamePattern>
+        </rollingPolicy>
+        <triggeringPolicy class = "ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <MaxFileSize>100MB</MaxFileSize>
+        </triggeringPolicy>
+    </appender>
+
+
+    <loggers>
+
+        <logger name="calls" additivity="false" level="INFO">
+            <appenderRef ref="calls" />
+            <appenderRef ref="console" />
+        </logger>
+        <root level="info">
+            <appenderRef ref="console" />
+        </root>
+    </loggers>
+</configuration>
