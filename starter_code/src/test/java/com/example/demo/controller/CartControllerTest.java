@@ -24,10 +24,8 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,16 +33,12 @@ import static org.mockito.Mockito.*;
 
 
 @RunWith(MockitoJUnitRunner.class)
-public class ControllersTest {
+public class CartControllerTest {
 
     @InjectMocks
     private CartController cartController;
 
-    @InjectMocks
-    private ItemController itemController;
 
-    @InjectMocks
-    private OrderController orderController;
 
     @Mock
     private UserRepository userRepository;
@@ -63,9 +57,6 @@ public class ControllersTest {
 
         when(userRepository.findByUsername("user1")).thenReturn(createUser());
         when(itemRepository.findById(any())).thenReturn(Optional.of(createItem(1)));
-        when(itemRepository.findAll()).thenReturn(createItems());
-        when(itemRepository.findByName("item")).thenReturn(Arrays.asList(createItem(1), createItem(2)));
-        when(orderRepository.findByUser(any())).thenReturn(createOrders());
     }
 
     public static Cart createCart(User user) {
@@ -113,25 +104,8 @@ public class ControllersTest {
         return user;
     }
 
-    public static List<UserOrder> createOrders(){
-        List<UserOrder> orders = new ArrayList<>();
-
-        IntStream.range(0,2).forEach(i -> {
-            UserOrder order = new UserOrder();
-            Cart cart = createCart(createUser());
-
-            order.setItems(cart.getItems());
-            order.setTotal(cart.getTotal());
-            order.setUser(createUser());
-            order.setId(Long.valueOf(i));
-
-            orders.add(order);
-        });
-        return orders;
-    }
-
     @Test
-    public void verify_addToCart(){
+    public void addToCartTest(){
         ModifyCartRequest request = new ModifyCartRequest();
         request.setQuantity(3);
         request.setItemId(1);
@@ -156,30 +130,37 @@ public class ControllersTest {
         verify(cartRepository, times(1)).save(actualCart);
 
     }
+
     @Test
-    public void verify_getItems(){
-        ResponseEntity<List<Item>> response = itemController.getItems();
+    public void removeFromCartTest(){
 
+        ModifyCartRequest request = new ModifyCartRequest();
+        request.setQuantity(1);
+        request.setItemId(1);
+        request.setUsername("user1");
+
+        ResponseEntity<Cart> response = cartController.removeFromcart(request);
         assertNotNull(response);
-        assertEquals(200, response.getStatusCodeValue());
-        List<Item> items = response.getBody();
 
-        assertEquals(createItems(), items);
+        Cart actualCart = response.getBody();
 
-        verify(itemRepository , times(1)).findAll();
+        Cart generatedCart = createCart(createUser());
+
+        assertNotNull(actualCart);
+
+        Item item = createItem(request.getItemId());
+        BigDecimal itemPrice = item.getPrice();
+
+        BigDecimal expectedTotal = generatedCart.getTotal().subtract(itemPrice.multiply(BigDecimal.valueOf(request.getQuantity())));
+
+        assertEquals("user1", actualCart.getUser().getUsername());
+        assertEquals(generatedCart.getItems().size() - request.getQuantity(), actualCart.getItems().size());
+        assertEquals(createItem(2), actualCart.getItems().get(0));
+        assertEquals(expectedTotal, actualCart.getTotal());
+
+        verify(cartRepository, times(1)).save(actualCart);
+
     }
-    @Test
-    public void verify_order_submit(){
-
-        ResponseEntity<UserOrder> response = orderController.submit("user1");
-        assertNotNull(response);
-        UserOrder order = response.getBody();
-        assertEquals(createItems(), order.getItems());
-        assertEquals(createUser().getId(), order.getUser().getId());
-        verify(orderRepository, times(1)).save(order);
-
-    }
-
 
 
 }
